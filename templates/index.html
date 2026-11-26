@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TodoFlow – Quản lý công việc</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%234f46e5'/%3E%3Cpath d='M9 16.5l5 5 9-10' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <script>
+    /* Áp dụng giao diện sáng/tối trước khi trang vẽ để không bị nháy màn hình */
+    (function () {
+      try {
+        var t = localStorage.getItem('theme');
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#" aria-label="TodoFlow">
+      <span class="brand-mark" data-icon="check"></span>
+      <span class="brand-name">TodoFlow</span>
+    </a>
+
+    <nav class="tabs" aria-label="Điều hướng">
+      <button class="tab active" data-page="tasks"><span data-icon="list"></span>Công việc</button>
+      <button class="tab" data-page="stats"><span data-icon="chart"></span>Thống kê</button>
+    </nav>
+
+    <div class="top-actions">
+      <button class="icon-btn" id="themeBtn" title="Đổi giao diện sáng/tối" aria-label="Đổi giao diện sáng/tối"></button>
+      <button class="btn primary" id="addBtn"><span data-icon="plus"></span><span class="btn-label">Thêm công việc</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ================= TRANG CÔNG VIỆC ================= -->
+  <section id="page-tasks" class="page">
+    <div class="page-head">
+      <h1>Công việc của bạn</h1>
+      <p id="subtitle" class="muted"></p>
+    </div>
+
+    <div id="summary" class="summary"></div>
+
+    <div class="toolbar">
+      <label class="search">
+        <span data-icon="search"></span>
+        <input id="q" type="search" placeholder="Tìm công việc… (gõ không dấu cũng được)" autocomplete="off">
+      </label>
+      <select id="fCategory" class="input" aria-label="Lọc theo danh mục"></select>
+      <select id="fPriority" class="input" aria-label="Lọc theo độ ưu tiên">
+        <option value="">Mọi mức ưu tiên</option>
+        <option value="high">Ưu tiên cao</option>
+        <option value="medium">Ưu tiên trung bình</option>
+        <option value="low">Ưu tiên thấp</option>
+      </select>
+      <select id="fSort" class="input" aria-label="Sắp xếp">
+        <option value="newest">Mới nhất</option>
+        <option value="oldest">Cũ nhất</option>
+        <option value="due">Hạn gần nhất</option>
+        <option value="priority">Ưu tiên cao trước</option>
+        <option value="title">Tên A → Z</option>
+      </select>
+      <div class="seg" id="viewSwitch" role="group" aria-label="Chế độ xem">
+        <button data-view="list" title="Dạng danh sách" aria-label="Dạng danh sách"><span data-icon="list"></span></button>
+        <button data-view="board" title="Dạng bảng Kanban" aria-label="Dạng bảng Kanban"><span data-icon="board"></span></button>
+      </div>
+    </div>
+
+    <div class="subbar">
+      <div class="seg" id="statusSeg" role="group" aria-label="Lọc theo trạng thái">
+        <button data-status="">Tất cả</button>
+        <button data-status="todo">Chưa làm</button>
+        <button data-status="doing">Đang làm</button>
+        <button data-status="done">Hoàn thành</button>
+      </div>
+      <button class="btn ghost text-danger" id="clearDone" hidden><span data-icon="trash"></span>Xóa tất cả đã hoàn thành</button>
+    </div>
+
+    <div id="taskView"></div>
+  </section>
+
+  <!-- ================= TRANG THỐNG KÊ ================= -->
+  <section id="page-stats" class="page" hidden>
+    <div class="page-head">
+      <h1>Thống kê</h1>
+      <p class="muted">Tổng quan tiến độ công việc của bạn.</p>
+    </div>
+
+    <div id="statCards" class="stat-cards"></div>
+
+    <div class="stat-grid">
+      <div class="panel">
+        <h3>Tỉ lệ theo trạng thái</h3>
+        <div id="donutBox" class="donut-box"></div>
+      </div>
+      <div class="panel">
+        <h3>7 ngày gần nhất</h3>
+        <div id="week"></div>
+      </div>
+    </div>
+
+    <div class="stat-grid even">
+      <div class="panel">
+        <h3>Theo danh mục</h3>
+        <div id="byCategory" class="meter-list"></div>
+      </div>
+      <div class="panel">
+        <h3>Theo độ ưu tiên</h3>
+        <div id="byPriority" class="meter-list"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">TodoFlow · Flask + SQLite · Đồ án phát triển ứng dụng thực tiễn</footer>
+
+<!-- ================= FORM THÊM / SỬA ================= -->
+<dialog id="taskDialog" aria-labelledby="dialogTitle">
+  <form id="taskForm" class="dialog-body" novalidate>
+    <h2 id="dialogTitle">Thêm công việc</h2>
+
+    <div class="field">
+      <label for="f_title">Tiêu đề <span class="req">*</span></label>
+      <input id="f_title" class="input" maxlength="200" placeholder="Ví dụ: Làm bài tập Database" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label for="f_desc">Mô tả</label>
+      <textarea id="f_desc" class="input" rows="3" maxlength="2000" placeholder="Ghi chú thêm (không bắt buộc)"></textarea>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="f_category">Danh mục</label>
+        <select id="f_category" class="input"></select>
+      </div>
+      <div class="field">
+        <label for="f_priority">Độ ưu tiên</label>
+        <select id="f_priority" class="input">
+          <option value="high">Cao</option>
+          <option value="medium" selected>Trung bình</option>
+          <option value="low">Thấp</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="f_status">Trạng thái</label>
+        <select id="f_status" class="input">
+          <option value="todo">Chưa làm</option>
+          <option value="doing">Đang làm</option>
+          <option value="done">Hoàn thành</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f_due">Hạn hoàn thành</label>
+        <input id="f_due" type="date" class="input">
+      </div>
+    </div>
+
+    <p id="formError" class="form-error" role="alert"></p>
+
+    <div class="dialog-actions">
+      <button type="button" class="btn ghost" id="cancelBtn">Hủy</button>
+      <button type="submit" class="btn primary" id="saveBtn">Lưu</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ================= HỘP XÁC NHẬN ================= -->
+<dialog id="confirmDialog">
+  <form method="dialog" class="dialog-body">
+    <h2>Xác nhận</h2>
+    <p id="confirmText" class="confirm-text"></p>
+    <div class="dialog-actions">
+      <button value="cancel" class="btn ghost">Hủy</button>
+      <button value="ok" class="btn danger" id="confirmOk">Xóa</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

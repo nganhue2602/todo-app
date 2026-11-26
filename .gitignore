@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+
+# Database cục bộ (được tạo tự động khi chạy app – xem schema.sql / seed.sql)
+data/*.db
+data/*.db-journal
+data/*.sqlite3
+
+# Cấu hình / IDE / hệ điều hành
+.env
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
