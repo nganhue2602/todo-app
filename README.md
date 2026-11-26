@@ -1,6 +1,12 @@
 # TodoFlow – Ứng dụng quản lý công việc (TODO list)
 
-Đồ án **Phát triển ứng dụng thực tiễn**: web TODO list viết bằng **Flask (Python)** + **SQLite**, giao diện HTML/CSS/JavaScript thuần (không cần cài Node.js hay build gì cả).
+Đồ án **Phát triển ứng dụng thực tiễn**: web app TODO list chạy **thẳng trên trình duyệt** – không cần cài Python, Node.js hay server gì cả. Dữ liệu được lưu bằng **IndexedDB** (cơ sở dữ liệu có sẵn trong trình duyệt).
+
+## 🌐 Dùng thử
+
+**Link web:** `https://<ten-tai-khoan>.github.io/<ten-repo>/` *(có sau khi bật GitHub Pages – xem hướng dẫn bên dưới)*
+
+Hoặc tải code về, **bấm đúp vào file `index.html`** là dùng được ngay.
 
 ## Đáp ứng yêu cầu đề bài
 
@@ -10,8 +16,8 @@
 | **Cập nhật trạng thái** | 3 trạng thái: *Chưa làm → Đang làm → Hoàn thành*. Đổi bằng: tích tròn ✔ ở đầu dòng, menu trạng thái, nút ◀ ▶, hoặc **kéo thả** thẻ giữa các cột ở dạng bảng Kanban. |
 | **Thống kê** | Tab **Thống kê**: tổng số việc, tỉ lệ hoàn thành (biểu đồ tròn), việc quá hạn / đến hạn hôm nay, biểu đồ 7 ngày gần nhất, thống kê theo danh mục và theo độ ưu tiên. |
 | **Hình thiết kế / giao diện** | Giao diện hiện đại, responsive (dùng được trên điện thoại), có chế độ sáng/tối, 2 kiểu xem: danh sách và Kanban. |
-| **Database** | SQLite với 2 bảng `categories` và `tasks` có khóa ngoại, ràng buộc `CHECK`, chỉ mục. Xem `schema.sql` và sơ đồ ERD bên dưới. |
-| **Hệ thống hoàn chỉnh** | Backend REST API + Frontend + Database chạy thống nhất, có kiểm tra dữ liệu đầu vào, có bộ test tự động. |
+| **Database** | IndexedDB với 2 bảng (object store) `categories` và `tasks`, có chỉ mục, kiểm tra dữ liệu đầu vào. Xem sơ đồ ERD bên dưới và file `js/db.js`. |
+| **Hệ thống hoàn chỉnh** | Giao diện + xử lý nghiệp vụ + cơ sở dữ liệu chạy thống nhất, dữ liệu còn nguyên khi tắt/mở lại trình duyệt. |
 
 ## Giao diện
 
@@ -25,58 +31,17 @@
 
 ## Công nghệ
 
-- **Backend:** Python 3.9+, Flask
-- **Database:** SQLite (có sẵn trong Python, không cần cài thêm)
-- **Frontend:** HTML5, CSS3, JavaScript (ES6), không dùng thư viện ngoài
-
-## Cách chạy
-
-Yêu cầu: đã cài [Python 3.9 trở lên](https://www.python.org/downloads/).
-
-```bash
-# 1. Tải code về và mở terminal trong thư mục project
-cd todo-app
-
-# 2. (Khuyến nghị) tạo môi trường ảo
-python -m venv venv
-venv\Scripts\activate          # Windows
-# source venv/bin/activate     # macOS / Linux
-
-# 3. Cài thư viện
-pip install -r requirements.txt
-
-# 4. Chạy ứng dụng
-python app.py
-```
-
-Mở trình duyệt vào **http://127.0.0.1:5000**.
-
-Lần chạy đầu tiên, ứng dụng tự tạo file database `data/todo.db` và nạp vài công việc mẫu để dễ demo. Muốn bắt đầu lại từ đầu: tắt app, xóa file `data/todo.db`, chạy lại.
-
-### Chạy kiểm thử
-
-```bash
-python -m unittest discover -s tests -v
-```
+- HTML5, CSS3, JavaScript (ES6) thuần – không dùng thư viện hay framework ngoài
+- IndexedDB làm cơ sở dữ liệu (tự chuyển sang localStorage nếu trình duyệt chặn IndexedDB)
 
 ## Cấu trúc thư mục
 
 ```
-todo-app/
-├── app.py              # Flask: các route + REST API
-├── database.py         # Kết nối SQLite, khởi tạo database
-├── schema.sql          # Câu lệnh tạo bảng (cấu trúc database)
-├── seed.sql            # Dữ liệu mẫu (chỉ nạp lần đầu)
-├── requirements.txt    # Danh sách thư viện Python
-├── templates/
-│   └── index.html      # Giao diện (1 trang)
-├── static/
-│   ├── css/style.css   # Giao diện, chế độ sáng/tối, responsive
-│   └── js/app.js       # Xử lý giao diện, gọi API
-├── tests/
-│   └── test_api.py     # Test tự động
-├── docs/screenshots/   # Ảnh chụp giao diện dùng trong README
-└── data/               # Chứa todo.db (tự tạo, không đẩy lên GitHub)
+├── index.html          # Giao diện (1 trang)
+├── css/style.css       # Giao diện, chế độ sáng/tối, responsive
+├── js/db.js            # Cơ sở dữ liệu + xử lý nghiệp vụ (thêm/sửa/xóa, trạng thái, thống kê)
+├── js/app.js           # Xử lý giao diện, kéo thả, vẽ biểu đồ
+└── docs/screenshots/   # Ảnh chụp giao diện dùng trong README
 ```
 
 ## Thiết kế cơ sở dữ liệu
@@ -86,14 +51,14 @@ erDiagram
     CATEGORIES ||--o{ TASKS : "phân loại"
     CATEGORIES {
         INTEGER id PK
-        TEXT name "UNIQUE, NOT NULL"
+        TEXT name "duy nhất"
         TEXT color "mã màu hiển thị"
     }
     TASKS {
         INTEGER id PK
-        TEXT title "NOT NULL"
+        TEXT title "bắt buộc, tối đa 200 ký tự"
         TEXT description
-        INTEGER category_id FK "ON DELETE SET NULL"
+        INTEGER category_id FK
         TEXT priority "low | medium | high"
         TEXT status "todo | doing | done"
         TEXT due_date "YYYY-MM-DD"
@@ -103,32 +68,29 @@ erDiagram
     }
 ```
 
-## Danh sách API
+Chỉ mục trên bảng `tasks`: `status`, `category_id`, `due_date`.
+Lần mở đầu tiên, app tự tạo database và nạp vài công việc mẫu để demo (có thể xóa đi).
 
-| Method | Đường dẫn | Chức năng |
-|---|---|---|
-| GET | `/api/tasks` | Lấy danh sách. Tham số: `q`, `status`, `category_id`, `priority`, `sort` (`newest`, `oldest`, `due`, `priority`, `title`) |
-| GET | `/api/tasks/<id>` | Xem chi tiết 1 công việc |
-| POST | `/api/tasks` | Thêm công việc |
-| PUT | `/api/tasks/<id>` | Sửa công việc |
-| PATCH | `/api/tasks/<id>/status` | Cập nhật trạng thái |
-| DELETE | `/api/tasks/<id>` | Xóa công việc |
-| DELETE | `/api/tasks/completed` | Xóa tất cả công việc đã hoàn thành |
-| GET | `/api/categories` | Danh sách danh mục |
-| GET | `/api/stats` | Số liệu thống kê |
+## Đưa lên GitHub và có link web (GitHub Pages)
 
-## Đưa lên GitHub
+1. Vào [github.com/new](https://github.com/new), tạo repository mới (tick **Public**).
+2. Bấm **uploading an existing file**, kéo thả **toàn bộ file và thư mục bên trong** thư mục đã giải nén (`index.html`, `css`, `js`, `docs`, `README.md`) vào, rồi bấm **Commit changes**.
+   *File `index.html` phải nằm ngay ở thư mục gốc của repo.*
+3. Vào **Settings → Pages**. Ở mục *Build and deployment*, chọn **Source: Deploy from a branch**, **Branch: main**, thư mục **/ (root)**, bấm **Save**.
+4. Đợi khoảng 1–2 phút, link web sẽ hiện ở đầu trang Pages: `https://<ten-tai-khoan>.github.io/<ten-repo>/`. Dán link này vào phần README ở trên.
 
-1. Tạo repository mới trên [github.com/new](https://github.com/new) (để trống, không tick *Add README*).
-2. Mở terminal trong thư mục project và chạy:
+Hoặc dùng dòng lệnh:
 
 ```bash
 git init
 git add .
-git commit -m "Initial commit: TodoFlow"
+git commit -m "TodoFlow"
 git branch -M main
 git remote add origin https://github.com/<ten-tai-khoan>/<ten-repo>.git
 git push -u origin main
 ```
 
-> **Lưu ý:** GitHub chỉ lưu mã nguồn, không chạy được Flask. Nếu cần có đường link để thầy xem trực tiếp, có thể deploy miễn phí lên [Render](https://render.com) hoặc [PythonAnywhere](https://www.pythonanywhere.com).
+## Lưu ý
+
+- Dữ liệu nằm trong **trình duyệt của từng máy**: mở trên máy/trình duyệt khác sẽ thấy dữ liệu mẫu ban đầu. Xóa dữ liệu duyệt web (cookies, site data) sẽ làm mất các công việc đã nhập.
+- Muốn bắt đầu lại từ đầu: mở DevTools (F12) → *Application* → *Storage* → *Clear site data*, rồi tải lại trang.
